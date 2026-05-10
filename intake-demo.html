@@ -301,40 +301,62 @@
   </div>
 
   <!-- ══════════════════════════════════════
-       PANEL 3 — CLIENT SIGNS
+       PANEL 3 — STAFF VIEW (after sending)
   ══════════════════════════════════════ -->
   <div class="panel" id="panel3">
-
-    <div class="alert alert-success">
-      ✅ Email sent! Now simulate what the client sees when they open the signing link.
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">✅</div>
+        <div>
+          <div class="card-title">Signing request sent!</div>
+          <div class="card-subtitle">Waiting for client to sign</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-success" style="margin-bottom:16px">
+          ✅ An email has been sent to the client with a secure signing link. You will receive a notification at <strong>mona.hatamiai@gmail.com</strong> once they sign.
+        </div>
+        <div class="field-grid col-2">
+          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">ANIMAL</div><div style="font-size:14px;font-weight:600" id="s3_animal">Max — Dog</div></div>
+          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">RECORD #</div><div style="font-size:14px;font-weight:600">A-48291</div></div>
+          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">SENT TO</div><div style="font-size:14px;font-weight:600" id="s3_email">—</div></div>
+          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">STATUS</div><div style="font-size:14px;font-weight:600;color:#f39c12">⏳ Awaiting signature</div></div>
+        </div>
+        <p style="font-size:12px;color:var(--gray);margin-top:16px;">The client will receive an email with a link that takes them directly to the signing page. Once signed, the document will be saved to Google Drive and you will be notified.</p>
+      </div>
     </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="resetDemo()">← Start new form</button>
+    </div>
+  </div>
 
+  <!-- ══════════════════════════════════════
+       SIGNING PAGE — shown when client
+       opens link from email (?sign=1)
+  ══════════════════════════════════════ -->
+  <div id="signingPage" style="display:none">
     <div class="card">
       <div class="card-header">
         <div class="card-header-icon">✍️</div>
         <div>
-          <div class="card-title">Client signing page</div>
-          <div class="card-subtitle">This is what Carmen sees on her phone / computer</div>
+          <div class="card-title">Sign your document</div>
+          <div class="card-subtitle">Animal Care Centers of NYC</div>
         </div>
       </div>
       <div class="card-body">
-
         <div class="alert alert-warning" style="margin-bottom:16px">
           🔒 Secure signing link — Animal Intake Form for <strong>Max</strong> (Dog) — expires in 48 hours
         </div>
-
         <div class="field-grid col-2" style="margin-bottom:16px">
           <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">ANIMAL</div><div style="font-size:14px;font-weight:600">Max — Dog</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">RECORD #</div><div style="font-size:14px;font-weight:600">A-48291</div></div>
+          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">RECORD #</div><div style="font-size:14px;font-weight:600" id="sp_record">A-48291</div></div>
           <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">DATE</div><div style="font-size:14px;font-weight:600">May 9, 2026</div></div>
           <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">OFFICER</div><div style="font-size:14px;font-weight:600">J. Rodriguez</div></div>
         </div>
-
         <div class="field" style="margin-bottom:12px">
           <label>Your full name (type to confirm identity)</label>
           <input type="text" id="clientName" placeholder="Type your full name here">
         </div>
-
         <div class="field">
           <label>Signature — draw with finger or mouse</label>
           <div class="sig-wrap">
@@ -345,12 +367,9 @@
             <canvas id="sigCanvas"></canvas>
           </div>
         </div>
-
         <p style="font-size:12px;color:var(--gray);margin-top:10px;line-height:1.5">By signing above, I confirm the information in this Animal Intake Form is accurate to the best of my knowledge.</p>
-
       </div>
     </div>
-
     <div class="btn-row">
       <button class="btn-primary" onclick="submitSignature()">Submit Signature →</button>
     </div>
@@ -460,6 +479,9 @@ async function sendEmail() {
     btn.disabled = false;
     label.textContent = 'Send Email';
     spin.style.display = 'none';
+    // Show who we sent to
+    document.getElementById('s3_email').textContent = email;
+    document.getElementById('s3_animal').textContent = document.getElementById('f_name').value + ' — ' + document.getElementById('f_type').value;
     goTo(3);
   });
 }
@@ -573,22 +595,28 @@ function resetDemo() {
 }
 
 // ── AUTO DETECT SIGNING LINK ──
-// If opened from email link with ?sign=1, jump straight to signing page
+// If opened from email link with ?sign=1, show signing page only
 document.addEventListener('DOMContentLoaded', function() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('sign') === '1') {
-    const token    = params.get('token')  || '';
+    // Hide the main form flow completely
+    document.querySelector('.progress-wrap').style.display = 'none';
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+
+    // Update record ID if provided
     const recordId = params.get('record') || 'A-48291';
+    const recordEl = document.getElementById('sp_record');
+    if (recordEl) recordEl.textContent = recordId;
 
-    // Update the signing page with the correct record info
-    const recordEl = document.querySelector('.sig-wrap');
+    // Show signing page
+    document.getElementById('signingPage').style.display = 'block';
 
-    // Jump straight to step 3 — the signing page
-    goTo(3);
-
-    // Update the header badge to show "Client Signing"
+    // Update header
     const badge = document.querySelector('.header-badge');
     if (badge) badge.textContent = '✍️ Please sign your document';
+
+    // Init canvas
+    setTimeout(initCanvas, 100);
   }
 });
 </script>
