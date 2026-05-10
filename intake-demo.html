@@ -324,6 +324,17 @@ function submitSig() {
   var btn=document.getElementById('subBtn'),lbl=document.getElementById('subLbl'),spin=document.getElementById('subSpin');
   btn.disabled=true; lbl.textContent='Saving...'; spin.style.display='inline-block';
   var p=new URLSearchParams(window.location.search);
+
+  // Use a small signature thumbnail to avoid URL length limits
+  var sigData = '';
+  try {
+    var tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = 400; tmpCanvas.height = 100;
+    var tmpCtx = tmpCanvas.getContext('2d');
+    tmpCtx.drawImage(canvas, 0, 0, canvas.width/window.devicePixelRatio, canvas.height/window.devicePixelRatio, 0, 0, 400, 100);
+    sigData = tmpCanvas.toDataURL('image/jpeg', 0.5);
+  } catch(e) { sigData = 'signature_on_file'; }
+
   callGAS({
     action:'save_signed_document',
     token:dec(p.get('token')||'demo_'+Date.now()),
@@ -331,7 +342,7 @@ function submitSig() {
     owner_name:dec(p.get('owner')||'Client'),
     animal_name:dec(p.get('animal')||'Animal'),
     signed_name:name,
-    signature_data:canvas.toDataURL('image/png'),
+    signature_data:sigData,
     form_data:JSON.stringify({
       precinct:dec(p.get('pre')||''),officer:dec(p.get('off')||''),
       type:dec(p.get('type')||''),phone:dec(p.get('phone')||''),
