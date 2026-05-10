@@ -571,6 +571,26 @@ function resetDemo() {
   if (ctx) ctx.clearRect(0,0,canvas.width,canvas.height);
   goTo(1);
 }
+
+// ── AUTO DETECT SIGNING LINK ──
+// If opened from email link with ?sign=1, jump straight to signing page
+document.addEventListener('DOMContentLoaded', function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('sign') === '1') {
+    const token    = params.get('token')  || '';
+    const recordId = params.get('record') || 'A-48291';
+
+    // Update the signing page with the correct record info
+    const recordEl = document.querySelector('.sig-wrap');
+
+    // Jump straight to step 3 — the signing page
+    goTo(3);
+
+    // Update the header badge to show "Client Signing"
+    const badge = document.querySelector('.header-badge');
+    if (badge) badge.textContent = '✍️ Please sign your document';
+  }
+});
 </script>
 </body>
 </html>
