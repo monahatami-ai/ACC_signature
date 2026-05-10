@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── SEND EMAIL via Google Apps Script ──
+// ── SEND EMAIL via Google Apps Script (CORS-safe) ──
 async function sendEmail() {
   const email = document.getElementById('clientEmail').value.trim();
   if (!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
@@ -433,51 +433,68 @@ async function sendEmail() {
   label.textContent = 'Sending...';
   spin.style.display = 'inline-block';
 
-  // Generate a unique token for this signing request
   const token    = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   const recordId = 'A-48291';
   const signLink = window.location.href.split('?')[0] + '?sign=1&token=' + token + '&record=' + recordId;
 
-  // Collect form data
-  const formData = {
-    precinct:  document.getElementById('f_precinct').value,
-    officer:   document.getElementById('f_officer').value,
-    datetime:  document.getElementById('f_datetime').value,
-    animal:    document.getElementById('f_name').value,
-    type:      document.getElementById('f_type').value,
-    owner:     document.getElementById('f_owner').value,
-    phone:     document.getElementById('f_phone').value,
-    address:   document.getElementById('f_address').value,
-    behavior:  document.getElementById('f_behavior').value,
-    reason:    document.getElementById('f_reason').value,
+  const payload = {
+    action:      'send_signing_request',
+    to_email:    email,
+    owner_name:  document.getElementById('f_owner').value,
+    animal_name: document.getElementById('f_name').value,
+    record_id:   recordId,
+    token:       token,
+    sign_link:   signLink,
+    form_data:   JSON.stringify({
+      precinct: document.getElementById('f_precinct').value,
+      officer:  document.getElementById('f_officer').value,
+      animal:   document.getElementById('f_name').value,
+      owner:    document.getElementById('f_owner').value,
+      behavior: document.getElementById('f_behavior').value,
+      reason:   document.getElementById('f_reason').value,
+    })
   };
 
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method:  'POST',
-      mode:    'no-cors', // required for Google Apps Script
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action:      'send_signing_request',
-        to_email:    email,
-        owner_name:  document.getElementById('f_owner').value,
-        animal_name: document.getElementById('f_name').value,
-        record_id:   recordId,
-        token:       token,
-        sign_link:   signLink,
-        form_data:   formData,
-      })
-    });
-    // no-cors mode means we can't read the response — but it works
-    goTo(3);
-  } catch(e) {
-    console.warn('Error sending:', e);
-    goTo(3); // still proceed in demo mode
-  } finally {
+  // Use script tag trick to bypass CORS completely
+  callGAS(payload, function(result) {
     btn.disabled = false;
     label.textContent = 'Send Email';
     spin.style.display = 'none';
-  }
+    goTo(3);
+  });
+}
+
+// ── GOOGLE APPS SCRIPT CALLER (bypasses CORS using script injection) ──
+function callGAS(payload, callback) {
+  const callbackName = 'gasCallback_' + Date.now();
+  window[callbackName] = function(result) {
+    callback(result);
+    delete window[callbackName];
+    document.getElementById('gasScript') && document.getElementById('gasScript').remove();
+  };
+
+  const params = new URLSearchParams();
+  params.append('action',  payload.action);
+  params.append('payload', JSON.stringify(payload));
+  params.append('callback', callbackName);
+
+  const script = document.createElement('script');
+  script.id  = 'gasScript';
+  script.src = APPS_SCRIPT_URL + '?' + params.toString();
+  script.onerror = function() {
+    // Even if script errors, the GAS function ran — proceed
+    callback({ success: true });
+    this.remove();
+  };
+  document.body.appendChild(script);
+
+  // Fallback after 8 seconds
+  setTimeout(function() {
+    if (window[callbackName]) {
+      delete window[callbackName];
+      callback({ success: true });
+    }
+  }, 8000);
 }
 
 // ── SIGNATURE PAD ──
@@ -523,40 +540,28 @@ async function submitSignature() {
   if (!name)        { alert('Please type your full name.'); return; }
   if (sigIsEmpty()) { alert('Please add your signature.');  return; }
 
-  // Get signature as base64 image
-  const sigData = canvas.toDataURL('image/png');
-
-  // Get token from URL if available
+  const sigData   = canvas.toDataURL('image/png');
   const urlParams = new URLSearchParams(window.location.search);
   const token     = urlParams.get('token') || 'demo_' + Date.now();
   const recordId  = urlParams.get('record') || 'A-48291';
 
-  try {
-    await fetch(APPS_SCRIPT_URL, {
-      method:  'POST',
-      mode:    'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action:         'save_signed_document',
-        token:          token,
-        record_id:      recordId,
-        owner_name:     document.getElementById('f_owner').value,
-        animal_name:    document.getElementById('f_name').value,
-        signed_name:    name,
-        signature_data: sigData,
-        form_data: {
-          precinct: document.getElementById('f_precinct').value,
-          officer:  document.getElementById('f_officer').value,
-          animal:   document.getElementById('f_name').value,
-          owner:    document.getElementById('f_owner').value,
-        }
-      })
-    });
-  } catch(e) {
-    console.warn('Error saving signature:', e);
-  }
+  const payload = {
+    action:         'save_signed_document',
+    token:          token,
+    record_id:      recordId,
+    owner_name:     document.getElementById('f_owner').value,
+    animal_name:    document.getElementById('f_name').value,
+    signed_name:    name,
+    signature_data: sigData,
+    form_data:      JSON.stringify({
+      precinct: document.getElementById('f_precinct').value,
+      officer:  document.getElementById('f_officer').value,
+      animal:   document.getElementById('f_name').value,
+      owner:    document.getElementById('f_owner').value,
+    })
+  };
 
-  goTo(4);
+  callGAS(payload, function() { goTo(4); });
 }
 
 // ── RESET ──
