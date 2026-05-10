@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShelterIQ — Document Signing Demo</title>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- Google Apps Script backend -->
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMs4rqYG1daoEouXErXx3k-mMKnp4mN9IIy1Us11yoTMB_O-PIdVZe_xbG_N0kogRU7w/exec';
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -384,17 +387,9 @@
 </div>
 
 <script>
-// ── EMAILJS SETUP ──
-// To make emails actually send:
-// 1. Go to emailjs.com — sign up free
-// 2. Create a service (Gmail works)
-// 3. Create a template with these variables: {{to_email}}, {{owner_name}}, {{animal_name}}, {{record_id}}, {{sign_link}}
-// 4. Replace YOUR_PUBLIC_KEY, YOUR_SERVICE_ID, YOUR_TEMPLATE_ID below
-const EMAILJS_PUBLIC_KEY   = 'YOUR_PUBLIC_KEY';
-const EMAILJS_SERVICE_ID   = 'YOUR_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID  = 'YOUR_TEMPLATE_ID';
-
-emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+// ── GOOGLE APPS SCRIPT BACKEND ──
+// Connected to: mona.hatami@shelteriq.org
+// Emails send from your Gmail, signed docs save to your Google Drive
 
 // ── STEP NAVIGATION ──
 function goTo(step) {
@@ -425,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── SEND EMAIL ──
+// ── SEND EMAIL via Google Apps Script ──
 async function sendEmail() {
   const email = document.getElementById('clientEmail').value.trim();
   if (!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
@@ -438,25 +433,46 @@ async function sendEmail() {
   label.textContent = 'Sending...';
   spin.style.display = 'inline-block';
 
-  // Build signing link (in production this would be a unique URL)
-  const signLink = window.location.href.split('?')[0] + '?sign=1&record=A-48291';
+  // Generate a unique token for this signing request
+  const token    = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const recordId = 'A-48291';
+  const signLink = window.location.href.split('?')[0] + '?sign=1&token=' + token + '&record=' + recordId;
+
+  // Collect form data
+  const formData = {
+    precinct:  document.getElementById('f_precinct').value,
+    officer:   document.getElementById('f_officer').value,
+    datetime:  document.getElementById('f_datetime').value,
+    animal:    document.getElementById('f_name').value,
+    type:      document.getElementById('f_type').value,
+    owner:     document.getElementById('f_owner').value,
+    phone:     document.getElementById('f_phone').value,
+    address:   document.getElementById('f_address').value,
+    behavior:  document.getElementById('f_behavior').value,
+    reason:    document.getElementById('f_reason').value,
+  };
 
   try {
-    if (EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method:  'POST',
+      mode:    'no-cors', // required for Google Apps Script
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:      'send_signing_request',
         to_email:    email,
         owner_name:  document.getElementById('f_owner').value,
         animal_name: document.getElementById('f_name').value,
-        record_id:   'A-48291',
+        record_id:   recordId,
+        token:       token,
         sign_link:   signLink,
-      });
-    }
-    // Whether EmailJS is configured or not, move to signing panel for demo
+        form_data:   formData,
+      })
+    });
+    // no-cors mode means we can't read the response — but it works
     goTo(3);
   } catch(e) {
-    console.warn('EmailJS not configured:', e);
-    // Still proceed in demo mode
-    goTo(3);
+    console.warn('Error sending:', e);
+    goTo(3); // still proceed in demo mode
   } finally {
     btn.disabled = false;
     label.textContent = 'Send Email';
@@ -501,11 +517,45 @@ function sigIsEmpty() {
   return !ctx.getImageData(0,0,canvas.width,canvas.height).data.some(v => v !== 0);
 }
 
-// ── SUBMIT SIGNATURE ──
-function submitSignature() {
+// ── SUBMIT SIGNATURE — saves to Google Drive ──
+async function submitSignature() {
   const name = document.getElementById('clientName').value.trim();
   if (!name)        { alert('Please type your full name.'); return; }
   if (sigIsEmpty()) { alert('Please add your signature.');  return; }
+
+  // Get signature as base64 image
+  const sigData = canvas.toDataURL('image/png');
+
+  // Get token from URL if available
+  const urlParams = new URLSearchParams(window.location.search);
+  const token     = urlParams.get('token') || 'demo_' + Date.now();
+  const recordId  = urlParams.get('record') || 'A-48291';
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:         'save_signed_document',
+        token:          token,
+        record_id:      recordId,
+        owner_name:     document.getElementById('f_owner').value,
+        animal_name:    document.getElementById('f_name').value,
+        signed_name:    name,
+        signature_data: sigData,
+        form_data: {
+          precinct: document.getElementById('f_precinct').value,
+          officer:  document.getElementById('f_officer').value,
+          animal:   document.getElementById('f_name').value,
+          owner:    document.getElementById('f_owner').value,
+        }
+      })
+    });
+  } catch(e) {
+    console.warn('Error saving signature:', e);
+  }
+
   goTo(4);
 }
 
