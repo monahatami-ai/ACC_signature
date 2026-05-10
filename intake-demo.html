@@ -454,23 +454,45 @@ async function sendEmail() {
 
   const token    = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   const recordId = 'A-48291';
-  const signLink = window.location.href.split('?')[0] + '?sign=1&token=' + token + '&record=' + recordId;
+  const owner    = document.getElementById('f_owner').value;
+  const animal   = document.getElementById('f_name').value;
+  const type     = document.getElementById('f_type').value;
+  const precinct = document.getElementById('f_precinct').value;
+  const officer  = document.getElementById('f_officer').value;
+  const phone    = document.getElementById('f_phone').value;
+  const address  = document.getElementById('f_address').value;
+  const behavior = document.getElementById('f_behavior').value;
+
+  // Pass all form data in the signing link so client page has it
+  const signLink = window.location.href.split('?')[0]
+    + '?sign=1&token=' + token
+    + '&record=' + recordId
+    + '&owner='  + encodeURIComponent(owner)
+    + '&animal=' + encodeURIComponent(animal)
+    + '&type='   + encodeURIComponent(type)
+    + '&pre='    + encodeURIComponent(precinct)
+    + '&off='    + encodeURIComponent(officer)
+    + '&phone='  + encodeURIComponent(phone)
+    + '&addr='   + encodeURIComponent(address)
+    + '&beh='    + encodeURIComponent(behavior);
 
   const payload = {
     action:      'send_signing_request',
     to_email:    email,
-    owner_name:  document.getElementById('f_owner').value,
-    animal_name: document.getElementById('f_name').value,
+    owner_name:  owner,
+    animal_name: animal,
     record_id:   recordId,
     token:       token,
     sign_link:   signLink,
     form_data:   JSON.stringify({
-      precinct: document.getElementById('f_precinct').value,
-      officer:  document.getElementById('f_officer').value,
-      animal:   document.getElementById('f_name').value,
-      owner:    document.getElementById('f_owner').value,
-      behavior: document.getElementById('f_behavior').value,
-      reason:   document.getElementById('f_reason').value,
+      precinct: precinct,
+      officer:  officer,
+      animal:   animal,
+      owner:    owner,
+      type:     type,
+      phone:    phone,
+      address:  address,
+      behavior: behavior,
     })
   };
 
@@ -564,22 +586,37 @@ async function submitSignature() {
 
   const sigData   = canvas.toDataURL('image/png');
   const urlParams = new URLSearchParams(window.location.search);
-  const token     = urlParams.get('token') || 'demo_' + Date.now();
+  const token     = urlParams.get('token')  || 'demo_' + Date.now();
   const recordId  = urlParams.get('record') || 'A-48291';
+  const isSigningPage = urlParams.get('sign') === '1';
+
+  // If opened from email link, get data from URL params
+  // If on main form, get data from form fields
+  const ownerName  = isSigningPage ? (urlParams.get('owner')  || 'Client')  : document.getElementById('f_owner').value;
+  const animalName = isSigningPage ? (urlParams.get('animal') || 'Animal')  : document.getElementById('f_name').value;
+  const precinct   = isSigningPage ? (urlParams.get('pre')    || '')        : document.getElementById('f_precinct').value;
+  const officer    = isSigningPage ? (urlParams.get('off')    || '')        : document.getElementById('f_officer').value;
+  const phone      = isSigningPage ? (urlParams.get('phone')  || '')        : document.getElementById('f_phone').value;
+  const address    = isSigningPage ? (urlParams.get('addr')   || '')        : document.getElementById('f_address').value;
+  const behavior   = isSigningPage ? (urlParams.get('beh')    || '')        : document.getElementById('f_behavior').value;
 
   const payload = {
     action:         'save_signed_document',
     token:          token,
     record_id:      recordId,
-    owner_name:     document.getElementById('f_owner').value,
-    animal_name:    document.getElementById('f_name').value,
+    owner_name:     ownerName,
+    animal_name:    animalName,
     signed_name:    name,
     signature_data: sigData,
     form_data:      JSON.stringify({
-      precinct: document.getElementById('f_precinct').value,
-      officer:  document.getElementById('f_officer').value,
-      animal:   document.getElementById('f_name').value,
-      owner:    document.getElementById('f_owner').value,
+      precinct: precinct,
+      officer:  officer,
+      animal:   animalName,
+      owner:    ownerName,
+      phone:    phone,
+      address:  address,
+      behavior: behavior,
+      type:     isSigningPage ? (urlParams.get('type') || '') : document.getElementById('f_type').value,
     })
   };
 
@@ -595,7 +632,6 @@ function resetDemo() {
 }
 
 // ── AUTO DETECT SIGNING LINK ──
-// If opened from email link with ?sign=1, show signing page only
 document.addEventListener('DOMContentLoaded', function() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('sign') === '1') {
@@ -603,15 +639,24 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.progress-wrap').style.display = 'none';
     document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
 
-    // Update record ID if provided
+    // Populate signing page with data from URL
+    const animal   = params.get('animal') || 'Max';
     const recordId = params.get('record') || 'A-48291';
+    const officer  = params.get('off')    || 'J. Rodriguez';
+
     const recordEl = document.getElementById('sp_record');
     if (recordEl) recordEl.textContent = recordId;
+
+    // Update animal info on signing page
+    const animalEls = document.querySelectorAll('#signingPage .field-value');
+    if (animalEls[0]) animalEls[0].textContent = animal + ' — ' + (params.get('type') || 'Dog');
+    if (animalEls[1]) animalEls[1].textContent = recordId;
+    if (animalEls[3]) animalEls[3].textContent = officer;
 
     // Show signing page
     document.getElementById('signingPage').style.display = 'block';
 
-    // Update header
+    // Update header badge
     const badge = document.querySelector('.header-badge');
     if (badge) badge.textContent = '✍️ Please sign your document';
 
