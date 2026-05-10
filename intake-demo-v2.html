@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShelterIQ — ACC Signing</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafb;color:#1C2B2D;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e2e8ea;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:#1A6B72}
+.logo-icon{width:36px;height:36px;background:#1A6B72;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800}
+.badge{background:#E8F4F5;color:#1A6B72;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600}
+.main{max-width:660px;margin:0 auto;padding:24px 16px}
+.card{background:#fff;border:1px solid #e2e8ea;border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card-head{padding:16px 20px;border-bottom:1px solid #e2e8ea;display:flex;align-items:center;gap:10px}
+.card-icon{width:32px;height:32px;background:#E8F4F5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.card-title{font-size:15px;font-weight:600}
+.card-sub{font-size:12px;color:#6B7E80;margin-top:2px}
+.card-body{padding:20px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:11px;font-weight:600;color:#6B7E80;text-transform:uppercase;letter-spacing:.05em}
+.field input,.field textarea{border:1px solid #e2e8ea;border-radius:8px;padding:9px 12px;font-size:13px;color:#1C2B2D;background:#fff;font-family:inherit}
+.field input.pre{background:#f0fdf4;border-color:#86efac}
+.field textarea{resize:vertical;min-height:70px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.div{height:1px;background:#e2e8ea;margin:16px 0}
+.alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;line-height:1.5}
+.ai{background:#E8F4F5;border:1px solid #99d4d8;color:#1A6B72}
+.as{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.aw{background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.btn{width:100%;padding:13px;background:#1A6B72;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+.btn:hover{background:#155f65}
+.btn:disabled{background:#ccc;cursor:not-allowed}
+.btn-back{padding:12px 20px;background:#fff;border:1px solid #e2e8ea;border-radius:10px;font-size:14px;color:#6B7E80;cursor:pointer;margin-top:8px}
+.row{display:flex;gap:10px}
+.sb-badge{display:inline-flex;align-items:center;gap:6px;background:#eef2ff;color:#4f46e5;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;margin-bottom:16px}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:#4f46e5;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.ib{background:#f8fafb;border-radius:8px;padding:12px}
+.il{font-size:11px;color:#6B7E80;font-weight:600;margin-bottom:4px}
+.iv{font-size:14px;font-weight:600}
+.sig-wrap{border:1px solid #e2e8ea;border-radius:10px;overflow:hidden}
+.sig-bar{padding:8px 14px;background:#f8fafb;border-bottom:1px solid #e2e8ea;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#6B7E80}
+.sig-clear{background:none;border:none;color:#1A6B72;font-size:12px;cursor:pointer;font-weight:600}
+canvas{display:block;width:100%;height:160px;cursor:crosshair;touch-action:none;background:#fff}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sw{text-align:center;padding:24px 16px}
+.si-icon{width:72px;height:72px;border-radius:50%;background:#f0fdf4;border:2px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 16px}
+.st{font-size:20px;font-weight:700;margin-bottom:8px}
+.sd{font-size:14px;color:#6B7E80;line-height:1.6;margin-bottom:20px}
+.ss-list{text-align:left;background:#f8fafb;border-radius:10px;padding:16px}
+.ss{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #e2e8ea;font-size:13px}
+.ss:last-child{border-bottom:none}
+.steps-bar{background:#fff;border-bottom:1px solid #e2e8ea;padding:14px 24px}
+.steps{display:flex;align-items:center;max-width:420px;margin:0 auto}
+.si{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.sc{width:28px;height:28px;border-radius:50%;border:2px solid #e2e8ea;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6B7E80}
+.sc.active{border-color:#1A6B72;background:#1A6B72;color:#fff}
+.sc.done{border-color:#2ecc71;background:#2ecc71;color:#fff}
+.sl{font-size:10px;color:#6B7E80;text-align:center}
+.sl.active{color:#1A6B72;font-weight:600}
+.sline{flex:1;height:2px;background:#e2e8ea;margin:0 4px 14px}
+.sline.done{background:#2ecc71}
+@media(max-width:500px){.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><div class="logo-icon">SQ</div>ShelterIQ</div>
+  <div class="badge" id="hbadge">📋 Document Signing</div>
+</div>
+
+<!-- STAFF VIEW -->
+<div id="staffView">
+  <div class="steps-bar">
+    <div class="steps">
+      <div class="si"><div class="sc active" id="sc1">1</div><div class="sl active" id="sl1">Form</div></div>
+      <div class="sline" id="ln1"></div>
+      <div class="si"><div class="sc" id="sc2">2</div><div class="sl" id="sl2">Email</div></div>
+      <div class="sline" id="ln2"></div>
+      <div class="si"><div class="sc" id="sc3">3</div><div class="sl" id="sl3">Sent!</div></div>
+    </div>
+  </div>
+  <div class="main">
+    <!-- Step 1 -->
+    <div id="s1">
+      <div class="alert ai">ℹ️ In production this form is auto-filled from ShelterBuddy via API. Sample data is pre-loaded for demo.</div>
+      <div class="card">
+        <div class="card-head"><div class="card-icon">🐾</div><div><div class="card-title">Animal Intake Form</div><div class="card-sub">Animal Care Centers of NYC</div></div></div>
+        <div class="card-body">
+          <div class="sb-badge"><div class="sb-dot"></div>Data pulled from ShelterBuddy #A-48291</div>
+          <div class="g3">
+            <div class="field"><label>Precinct</label><input class="pre" id="f_pre" value="67th Precinct"></div>
+            <div class="field"><label>Officer</label><input class="pre" id="f_off" value="J. Rodriguez"></div>
+            <div class="field"><label>Date/Time</label><input class="pre" id="f_dt" value="May 9, 2026 2:30PM"></div>
+          </div>
+          <div class="g3" style="margin-top:12px">
+            <div class="field"><label>Shield #</label><input class="pre" id="f_sh" value="4821"></div>
+            <div class="field"><label>Vehicle #</label><input class="pre" id="f_ve" value="V-204"></div>
+            <div class="field"><label>Shift</label><input class="pre" id="f_si" value="Day"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Pickup Location</label><input class="pre" id="f_loc" value="123 Atlantic Ave, Apt 4B, Brooklyn NY 11201"></div>
+          <div class="div"></div>
+          <div class="g3">
+            <div class="field"><label>Animal Type</label><input class="pre" id="f_type" value="Dog"></div>
+            <div class="field"><label>Animal Name</label><input class="pre" id="f_name" value="Max"></div>
+            <div class="field"><label>Age/DOB</label><input class="pre" id="f_age" value="~2 years"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Animal Behavior</label><textarea id="f_beh">Friendly, allowed handling, tail wagging. No signs of aggression.</textarea></div>
+          <div class="field" style="margin-top:12px"><label>Why picked up?</label><textarea id="f_why">Found wandering off-leash near the park. No collar or tags. Owner not present at scene.</textarea></div>
+          <div class="div"></div>
+          <div class="g2">
+            <div class="field"><label>Owner Name</label><input class="pre" id="f_own" value="Carmen Gonzalez"></div>
+            <div class="field"><label>Owner Phone</label><input class="pre" id="f_ph" value="347-219-2296"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Owner Address</label><input class="pre" id="f_addr" value="123 Atlantic Ave, Apt 4B, Brooklyn NY 11201"></div>
+        </div>
+      </div>
+      <button class="btn" onclick="showStep(2)">Send for Signature →</button>
+    </div>
+    <!-- Step 2 -->
+    <div id="s2" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">✉️</div><div><div class="card-title">Send signing request</div><div class="card-sub">Client receives a real email with a secure signing link</div></div></div>
+        <div class="card-body">
+          <div class="field">
+            <label>Client email address</label>
+            <input type="email" id="clientEmail" placeholder="Enter client email address" style="font-size:15px;padding:12px">
+          </div>
+          <div style="background:#f8fafb;border-radius:10px;padding:14px;font-size:13px;color:#6B7E80;line-height:1.6">
+            <div><strong style="color:#1C2B2D">From:</strong> ShelterIQ — ACC (mona.hatamiai@gmail.com)</div>
+            <div style="margin-top:4px"><strong style="color:#1C2B2D">Subject:</strong> Action required — please sign your Animal Intake Form</div>
+            <div style="margin-top:8px;color:#1C2B2D">Client receives a secure link to sign on any device. PDF automatically saved to Google Drive and you are notified once signed.</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn-back" onclick="showStep(1)">← Back</button>
+        <button class="btn" id="sendBtn" onclick="sendEmail()">
+          <span id="sendLbl">Send Email</span>
+          <span id="sendSpin" style="display:none" class="spin"></span>
+        </button>
+      </div>
+    </div>
+    <!-- Step 3 -->
+    <div id="s3" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-icon">✅</div><div><div class="card-title">Signing request sent!</div><div class="card-sub">Waiting for client to sign</div></div></div>
+        <div class="card-body">
+          <div class="alert as">✅ Email sent! You will be notified at <strong>mona.hatamiai@gmail.com</strong> once the client signs.</div>
+          <div class="ig">
+            <div class="ib"><div class="il">ANIMAL</div><div class="iv" id="s3animal">Max — Dog</div></div>
+            <div class="ib"><div class="il">RECORD #</div><div class="iv">A-48291</div></div>
+            <div class="ib"><div class="il">SENT TO</div><div class="iv" id="sentTo">—</div></div>
+            <div class="ib"><div class="il">STATUS</div><div class="iv" style="color:#f39c12">⏳ Awaiting signature</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-back" onclick="showStep(1)">← Start new form</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT SIGNING VIEW -->
+<div id="clientView" style="display:none">
+  <div class="main">
+    <div class="card">
+      <div class="card-head"><div class="card-icon">🔒</div><div><div class="card-title">Sign your document</div><div class="card-sub">Animal Care Centers of NYC — secure signing</div></div></div>
+      <div class="card-body">
+        <div class="alert aw">🔒 Secure signing link — expires in 48 hours</div>
+        <div class="ig">
+          <div class="ib"><div class="il">ANIMAL</div><div class="iv" id="c_animal">—</div></div>
+          <div class="ib"><div class="il">RECORD #</div><div class="iv" id="c_record">—</div></div>
+          <div class="ib"><div class="il">DATE</div><div class="iv" id="c_date">—</div></div>
+          <div class="ib"><div class="il">OFFICER</div><div class="iv" id="c_officer">—</div></div>
+        </div>
+        <div class="field" style="margin-bottom:14px">
+          <label>Your full name — type to confirm identity</label>
+          <input type="text" id="clientName" placeholder="Type your full name here" style="font-size:15px;padding:12px">
+        </div>
+        <div class="field">
+          <label>Signature — draw with finger or mouse</label>
+          <div class="sig-wrap">
+            <div class="sig-bar"><span>Sign in the box below</span><button class="sig-clear" onclick="clearSig()">Clear</button></div>
+            <canvas id="sigCanvas"></canvas>
+          </div>
+        </div>
+        <p style="font-size:12px;color:#6B7E80;margin-top:10px;line-height:1.5">By signing above, I confirm the information in this Animal Intake Form is accurate to the best of my knowledge.</p>
+      </div>
+    </div>
+    <button class="btn" id="subBtn" onclick="submitSig()">
+      <span id="subLbl">Submit Signature →</span>
+      <span id="subSpin" style="display:none" class="spin"></span>
+    </button>
+  </div>
+</div>
+
+<!-- SUCCESS VIEW -->
+<div id="successView" style="display:none">
+  <div class="main">
+    <div class="card">
+      <div class="card-body">
+        <div class="sw">
+          <div class="si-icon">✅</div>
+          <div class="st">Document signed!</div>
+          <div class="sd">Thank you. Your signature has been saved and the ACC team has been notified. You can close this window.</div>
+          <div class="ss-list">
+            <div class="ss"><span>✅</span><span><strong>Identity confirmed</strong></span></div>
+            <div class="ss"><span>✅</span><span><strong>Signature captured</strong> and saved securely</span></div>
+            <div class="ss"><span>✅</span><span><strong>Document saved</strong> to ACC Google Drive</span></div>
+            <div class="ss"><span>✅</span><span><strong>Staff notified</strong> automatically</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS = 'https://script.google.com/macros/s/AKfycbz8Iodq19z8zWicO41fWLe2yAUlBFoC2ttnZlpwXGutvmR3y3dFemr2qMWRTcCTRMjJ/exec';
+
+// On load — check if client signing link
+(function init() {
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('sign') === '1') {
+    document.getElementById('staffView').style.display = 'none';
+    document.getElementById('clientView').style.display = 'block';
+    document.getElementById('hbadge').textContent = '✍️ Please sign your document';
+    var animal  = dec(p.get('animal') || 'Max');
+    var type    = dec(p.get('type')   || 'Dog');
+    var record  = dec(p.get('record') || 'A-48291');
+    var officer = dec(p.get('off')    || 'J. Rodriguez');
+    document.getElementById('c_animal').textContent  = animal + ' — ' + type;
+    document.getElementById('c_record').textContent  = record;
+    document.getElementById('c_officer').textContent = officer;
+    document.getElementById('c_date').textContent    = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    setTimeout(initCanvas, 300);
+  }
+})();
+
+function dec(s) { try { return decodeURIComponent(s||''); } catch(e) { return s||''; } }
+
+function showStep(n) {
+  for (var i=1;i<=3;i++) {
+    document.getElementById('s'+i).style.display = i===n?'block':'none';
+    var c=document.getElementById('sc'+i), l=document.getElementById('sl'+i);
+    c.className='sc'+(i<n?' done':i===n?' active':'');
+    c.textContent=i<n?'✓':i;
+    l.className='sl'+(i===n?' active':'');
+    if(i<3) document.getElementById('ln'+i).className='sline'+(i<n?' done':'');
+  }
+}
+
+function sendEmail() {
+  var email = document.getElementById('clientEmail').value.trim();
+  if (!email||!email.includes('@')) { alert('Please enter a valid email address.'); return; }
+  var btn=document.getElementById('sendBtn'), lbl=document.getElementById('sendLbl'), spin=document.getElementById('sendSpin');
+  btn.disabled=true; lbl.textContent='Sending...'; spin.style.display='inline-block';
+
+  var token  = 'tok_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  var record = 'A-48291';
+  var name   = document.getElementById('f_name').value;
+  var type   = document.getElementById('f_type').value;
+  var owner  = document.getElementById('f_own').value;
+  var off    = document.getElementById('f_off').value;
+  var phone  = document.getElementById('f_ph').value;
+  var addr   = document.getElementById('f_addr').value;
+  var beh    = document.getElementById('f_beh').value;
+  var pre    = document.getElementById('f_pre').value;
+
+  var link = location.origin+location.pathname
+    +'?sign=1&token='+encodeURIComponent(token)
+    +'&record='+encodeURIComponent(record)
+    +'&animal='+encodeURIComponent(name)
+    +'&type='+encodeURIComponent(type)
+    +'&owner='+encodeURIComponent(owner)
+    +'&off='+encodeURIComponent(off)
+    +'&phone='+encodeURIComponent(phone)
+    +'&addr='+encodeURIComponent(addr)
+    +'&beh='+encodeURIComponent(beh)
+    +'&pre='+encodeURIComponent(pre);
+
+  callGAS({action:'send_signing_request',to_email:email,owner_name:owner,animal_name:name,
+    record_id:record,token:token,sign_link:link,
+    form_data:JSON.stringify({precinct:pre,officer:off,animal:name,owner:owner,type:type,phone:phone,address:addr,behavior:beh})
+  }, function() {
+    btn.disabled=false; lbl.textContent='Send Email'; spin.style.display='none';
+    document.getElementById('sentTo').textContent=email;
+    document.getElementById('s3animal').textContent=name+' — '+type;
+    showStep(3);
+  });
+}
+
+var canvas, ctx, drawing=false, lx=0, ly=0;
+function initCanvas() {
+  canvas=document.getElementById('sigCanvas');
+  if(!canvas) return;
+  ctx=canvas.getContext('2d');
+  var r=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  ctx.scale(dpr,dpr);
+  ctx.strokeStyle='#1C2B2D'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.lineJoin='round';
+  function pt(e) { var b=canvas.getBoundingClientRect(); return e.touches?{x:e.touches[0].clientX-b.left,y:e.touches[0].clientY-b.top}:{x:e.clientX-b.left,y:e.clientY-b.top}; }
+  canvas.addEventListener('mousedown',  function(e){drawing=true;var p=pt(e);lx=p.x;ly=p.y});
+  canvas.addEventListener('mousemove',  function(e){if(!drawing)return;var p=pt(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y});
+  canvas.addEventListener('mouseup',    function(){drawing=false});
+  canvas.addEventListener('mouseleave', function(){drawing=false});
+  canvas.addEventListener('touchstart', function(e){e.preventDefault();drawing=true;var p=pt(e);lx=p.x;ly=p.y},{passive:false});
+  canvas.addEventListener('touchmove',  function(e){e.preventDefault();if(!drawing)return;var p=pt(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y},{passive:false});
+  canvas.addEventListener('touchend',   function(){drawing=false});
+}
+function clearSig(){if(ctx)ctx.clearRect(0,0,canvas.width,canvas.height);}
+function sigEmpty(){if(!canvas||!ctx)return true;return !ctx.getImageData(0,0,canvas.width,canvas.height).data.some(function(v){return v!==0});}
+
+function submitSig() {
+  var name=document.getElementById('clientName').value.trim();
+  if(!name){alert('Please type your full name.');return;}
+  if(sigEmpty()){alert('Please draw your signature.');return;}
+  var btn=document.getElementById('subBtn'),lbl=document.getElementById('subLbl'),spin=document.getElementById('subSpin');
+  btn.disabled=true; lbl.textContent='Saving...'; spin.style.display='inline-block';
+  var p=new URLSearchParams(window.location.search);
+  callGAS({
+    action:'save_signed_document',
+    token:dec(p.get('token')||'demo_'+Date.now()),
+    record_id:dec(p.get('record')||'A-48291'),
+    owner_name:dec(p.get('owner')||'Client'),
+    animal_name:dec(p.get('animal')||'Animal'),
+    signed_name:name,
+    signature_data:canvas.toDataURL('image/png'),
+    form_data:JSON.stringify({
+      precinct:dec(p.get('pre')||''),officer:dec(p.get('off')||''),
+      type:dec(p.get('type')||''),phone:dec(p.get('phone')||''),
+      address:dec(p.get('addr')||''),behavior:dec(p.get('beh')||''),
+      owner:dec(p.get('owner')||''),animal:dec(p.get('animal')||'')
+    })
+  }, function() {
+    document.getElementById('clientView').style.display='none';
+    document.getElementById('successView').style.display='block';
+    document.getElementById('hbadge').textContent='✅ Signed!';
+  });
+}
+
+function callGAS(data, cb) {
+  var fn='cb_'+Date.now();
+  window[fn]=function(r){cb(r);delete window[fn];var s=document.getElementById('_gas');if(s)s.remove();};
+  var qs=new URLSearchParams({action:data.action,payload:JSON.stringify(data),callback:fn});
+  var s=document.createElement('script');
+  s.id='_gas'; s.src=GAS+'?'+qs.toString();
+  s.onerror=function(){cb({success:true});this.remove();};
+  document.body.appendChild(s);
+  setTimeout(function(){if(window[fn]){delete window[fn];cb({success:true});}},10000);
+}
+</script>
+</body>
+</html>
