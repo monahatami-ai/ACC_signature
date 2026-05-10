@@ -3,542 +3,345 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShelterIQ — Document Signing Demo</title>
-<!-- Google Apps Script backend -->
-<script>
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8Iodq19z8zWicO41fWLe2yAUlBFoC2ttnZlpwXGutvmR3y3dFemr2qMWRTcCTRMjJ/exec';
-</script>
+<title>ShelterIQ — ACC Document Signing</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --teal: #1A6B72;
-    --teal-light: #E8F4F5;
-    --teal-mid: #2a9d8f;
-    --dark: #1C2B2D;
-    --gray: #6B7E80;
-    --light: #f8fafb;
-    --border: #e2e8ea;
-    --success: #2ecc71;
-    --warning: #f39c12;
-    --danger: #e74c3c;
-    --white: #ffffff;
-  }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
-
-  /* ── HEADER ── */
-  .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--teal); }
-  .logo-icon { width: 36px; height: 36px; background: var(--teal); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 800; }
-  .header-badge { background: var(--teal-light); color: var(--teal); font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
-
-  /* ── PROGRESS STEPS ── */
-  .progress-wrap { background: var(--white); border-bottom: 1px solid var(--border); padding: 16px 24px; }
-  .steps { display: flex; align-items: center; max-width: 600px; margin: 0 auto; }
-  .step-item { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
-  .step-circle { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--gray); transition: all 0.3s; }
-  .step-circle.active { border-color: var(--teal); background: var(--teal); color: white; }
-  .step-circle.done { border-color: var(--success); background: var(--success); color: white; }
-  .step-label { font-size: 11px; color: var(--gray); font-weight: 500; text-align: center; }
-  .step-label.active { color: var(--teal); font-weight: 600; }
-  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px; margin-bottom: 18px; transition: background 0.3s; }
-  .step-line.done { background: var(--success); }
-
-  /* ── MAIN ── */
-  .main { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
-
-  /* ── PANELS ── */
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  /* ── CARD ── */
-  .card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
-  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
-  .card-header-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .card-title { font-size: 15px; font-weight: 600; color: var(--dark); }
-  .card-subtitle { font-size: 12px; color: var(--gray); margin-top: 2px; }
-  .card-body { padding: 20px; }
-
-  /* ── SHELTER BUDDY BADGE ── */
-  .sb-badge { display: inline-flex; align-items: center; gap: 6px; background: #eef2ff; color: #4f46e5; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-bottom: 16px; }
-  .sb-dot { width: 6px; height: 6px; border-radius: 50%; background: #4f46e5; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-  /* ── FORM FIELDS ── */
-  .field-grid { display: grid; gap: 12px; }
-  .col-3 { grid-template-columns: 1fr 1fr 1fr; }
-  .col-2 { grid-template-columns: 1fr 1fr; }
-  .col-1 { grid-template-columns: 1fr; }
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; }
-  .field input, .field textarea, .field select { border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--dark); background: var(--white); font-family: inherit; transition: border 0.2s; }
-  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(26,107,114,0.1); }
-  .field textarea { resize: vertical; min-height: 70px; }
-  .field input.prefilled { background: #f0fdf4; border-color: #86efac; color: #166534; }
-
-  /* ── YN BUTTONS ── */
-  .yn-group { display: flex; gap: 8px; }
-  .yn-btn { padding: 7px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--gray); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-  .yn-btn.yes { background: #f0fdf4; border-color: #86efac; color: #166534; }
-  .yn-btn.no { background: #fff1f2; border-color: #fca5a5; color: #991b1b; }
-
-  /* ── DIVIDER ── */
-  .divider { height: 1px; background: var(--border); margin: 16px 0; }
-
-  /* ── SIGNATURE PAD ── */
-  .sig-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .sig-toolbar { padding: 8px 14px; background: var(--light); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--gray); }
-  .sig-clear { background: none; border: none; color: var(--teal); font-size: 12px; cursor: pointer; font-weight: 600; }
-  canvas { display: block; width: 100%; height: 140px; cursor: crosshair; touch-action: none; background: white; }
-
-  /* ── EMAIL PREVIEW ── */
-  .email-preview { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; font-size: 13px; }
-  .email-meta { background: var(--light); padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  .email-meta p { margin-bottom: 4px; color: var(--gray); font-size: 12px; }
-  .email-meta p span { color: var(--dark); font-weight: 500; }
-  .email-body-preview { padding: 16px; line-height: 1.6; color: var(--dark); }
-  .email-cta { display: inline-block; margin: 12px 0; padding: 10px 20px; background: var(--teal); color: white; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none; }
-
-  /* ── BUTTONS ── */
-  .btn-row { display: flex; gap: 10px; margin-top: 4px; }
-  .btn-primary { flex: 1; padding: 12px; background: var(--teal); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .btn-primary:hover { background: #155f65; transform: translateY(-1px); }
-  .btn-primary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-  .btn-secondary { padding: 12px 20px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--gray); cursor: pointer; }
-  .btn-secondary:hover { background: var(--light); }
-
-  /* ── ALERT ── */
-  .alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; }
-  .alert-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
-  .alert-info { background: var(--teal-light); border: 1px solid #99d4d8; color: var(--teal); }
-  .alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
-
-  /* ── SUCCESS SCREEN ── */
-  .success-wrap { text-align: center; padding: 40px 20px; }
-  .success-icon { width: 80px; height: 80px; border-radius: 50%; background: #f0fdf4; border: 2px solid #86efac; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; }
-  .success-title { font-size: 22px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
-  .success-desc { font-size: 14px; color: var(--gray); line-height: 1.6; margin-bottom: 24px; }
-  .success-steps { text-align: left; background: var(--light); border-radius: 10px; padding: 16px; margin-bottom: 24px; }
-  .success-step { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-  .success-step:last-child { border-bottom: none; }
-  .success-step-icon { font-size: 18px; }
-
-  /* ── STATUS TIMELINE ── */
-  .timeline { display: flex; flex-direction: column; gap: 12px; }
-  .t-item { display: flex; gap: 14px; align-items: flex-start; }
-  .t-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-  .t-dot.done { background: #f0fdf4; }
-  .t-dot.spin { background: var(--teal-light); animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .t-text strong { font-size: 13px; display: block; margin-bottom: 2px; }
-  .t-text span { font-size: 12px; color: var(--gray); }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 500px) {
-    .col-3 { grid-template-columns: 1fr; }
-    .col-2 { grid-template-columns: 1fr; }
-  }
-
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal: #1A6B72; --teal-light: #E8F4F5;
+  --dark: #1C2B2D; --gray: #6B7E80;
+  --light: #f8fafb; --border: #e2e8ea;
+  --success: #2ecc71; --warning: #f39c12;
+  --white: #ffffff;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
+.header { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--teal); }
+.logo-icon { width: 36px; height: 36px; background: var(--teal); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 800; }
+.header-badge { background: var(--teal-light); color: var(--teal); font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+.main { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+.card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.card-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.card-title { font-size: 15px; font-weight: 600; }
+.card-subtitle { font-size: 12px; color: var(--gray); margin-top: 2px; }
+.card-body { padding: 20px; }
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; }
+.field input, .field textarea, .field select { border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--dark); background: var(--white); font-family: inherit; }
+.field input.prefilled { background: #f0fdf4; border-color: #86efac; }
+.field textarea { resize: vertical; min-height: 70px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+.alert-info { background: var(--teal-light); border: 1px solid #99d4d8; color: var(--teal); }
+.alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+.alert-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+.btn-primary { width: 100%; padding: 13px; background: var(--teal); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+.btn-primary:hover { background: #155f65; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+.btn-secondary { padding: 12px 20px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; color: var(--gray); cursor: pointer; margin-top: 8px; }
+.sig-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.sig-toolbar { padding: 8px 14px; background: var(--light); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--gray); }
+.sig-clear { background: none; border: none; color: var(--teal); font-size: 12px; cursor: pointer; font-weight: 600; }
+canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; background: white; }
+.steps { display: flex; align-items: center; max-width: 500px; margin: 0 auto 0; }
+.step-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.step-circle { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--gray); }
+.step-circle.active { border-color: var(--teal); background: var(--teal); color: white; }
+.step-circle.done { border-color: var(--success); background: var(--success); color: white; }
+.step-label { font-size: 10px; color: var(--gray); text-align: center; }
+.step-label.active { color: var(--teal); font-weight: 600; }
+.step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px 16px; }
+.step-line.done { background: var(--success); }
+.progress-wrap { background: var(--white); border-bottom: 1px solid var(--border); padding: 16px 24px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.info-box { background: var(--light); border-radius: 8px; padding: 12px; }
+.info-label { font-size: 11px; color: var(--gray); font-weight: 600; margin-bottom: 4px; }
+.info-value { font-size: 14px; font-weight: 600; }
+.success-wrap { text-align: center; padding: 20px; }
+.success-icon { width: 70px; height: 70px; border-radius: 50%; background: #f0fdf4; border: 2px solid #86efac; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px; }
+.success-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.success-desc { font-size: 14px; color: var(--gray); line-height: 1.6; margin-bottom: 20px; }
+.success-steps { text-align: left; background: var(--light); border-radius: 10px; padding: 16px; }
+.success-step { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.success-step:last-child { border-bottom: none; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sb-badge { display: inline-flex; align-items: center; gap: 6px; background: #eef2ff; color: #4f46e5; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-bottom: 16px; }
+.sb-dot { width: 6px; height: 6px; border-radius: 50%; background: #4f46e5; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@media(max-width:500px) { .grid2,.grid3 { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="header">
-  <div class="logo">
-    <div class="logo-icon">SQ</div>
-    ShelterIQ
-  </div>
-  <div class="header-badge">📋 Document Signing Demo</div>
+  <div class="logo"><div class="logo-icon">SQ</div>ShelterIQ</div>
+  <div class="header-badge" id="headerBadge">📋 Document Signing</div>
 </div>
 
-<!-- PROGRESS -->
-<div class="progress-wrap">
-  <div class="steps">
-    <div class="step-item">
-      <div class="step-circle active" id="sc1">1</div>
-      <div class="step-label active" id="sl1">Review form</div>
+<!-- ══════════════════════════════════════
+     STAFF FORM (shown by default)
+══════════════════════════════════════ -->
+<div id="staffView">
+  <div class="progress-wrap">
+    <div class="steps">
+      <div class="step-item"><div class="step-circle active" id="sc1">1</div><div class="step-label active" id="sl1">Review</div></div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-item"><div class="step-circle" id="sc2">2</div><div class="step-label" id="sl2">Send email</div></div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-item"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">Sent!</div></div>
     </div>
-    <div class="step-line" id="line1"></div>
-    <div class="step-item">
-      <div class="step-circle" id="sc2">2</div>
-      <div class="step-label" id="sl2">Send email</div>
+  </div>
+
+  <div class="main">
+
+    <!-- STEP 1: Form -->
+    <div id="step1">
+      <div class="alert alert-info">ℹ️ In production, this form is auto-filled from ShelterBuddy via API.</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🐾</div>
+          <div><div class="card-title">Animal Intake Form</div><div class="card-subtitle">Animal Care Centers of NYC — Rev. July 2024</div></div>
+        </div>
+        <div class="card-body">
+          <div class="sb-badge"><div class="sb-dot"></div> Data pulled from ShelterBuddy #A-48291</div>
+          <div class="grid3">
+            <div class="field"><label>Precinct</label><input class="prefilled" id="f_precinct" value="67th Precinct"></div>
+            <div class="field"><label>Officer name</label><input class="prefilled" id="f_officer" value="J. Rodriguez"></div>
+            <div class="field"><label>Date / Time</label><input class="prefilled" id="f_datetime" value="May 9, 2026 — 2:30 PM"></div>
+          </div>
+          <div class="grid3" style="margin-top:12px">
+            <div class="field"><label>Shield #</label><input class="prefilled" id="f_shield" value="4821"></div>
+            <div class="field"><label>Vehicle #</label><input class="prefilled" id="f_vehicle" value="V-204"></div>
+            <div class="field"><label>Shift</label><input class="prefilled" id="f_shift" value="Day"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Pickup location</label><input class="prefilled" id="f_location" value="123 Atlantic Ave, Apt 4B, Brooklyn NY 11201"></div>
+          <div class="divider"></div>
+          <div class="grid3">
+            <div class="field"><label>Animal type</label><input class="prefilled" id="f_type" value="Dog"></div>
+            <div class="field"><label>Animal name</label><input class="prefilled" id="f_name" value="Max"></div>
+            <div class="field"><label>Age / DOB</label><input class="prefilled" id="f_age" value="~2 years"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Animal behavior</label><textarea id="f_behavior">Friendly, allowed handling, tail wagging. No signs of aggression.</textarea></div>
+          <div class="field" style="margin-top:12px"><label>Why was the animal picked up?</label><textarea id="f_reason">Found wandering off-leash near the park. No collar or tags. Owner not present at scene.</textarea></div>
+          <div class="divider"></div>
+          <div class="grid2">
+            <div class="field"><label>Owner name</label><input class="prefilled" id="f_owner" value="Carmen Gonzalez"></div>
+            <div class="field"><label>Owner phone</label><input class="prefilled" id="f_phone" value="347-219-2296"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Owner address</label><input class="prefilled" id="f_address" value="123 Atlantic Ave, Apt 4B, Brooklyn NY 11201"></div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="goStep(2)">Send for Signature →</button>
     </div>
-    <div class="step-line" id="line2"></div>
-    <div class="step-item">
-      <div class="step-circle" id="sc3">3</div>
-      <div class="step-label" id="sl3">Client signs</div>
+
+    <!-- STEP 2: Send email -->
+    <div id="step2" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">✉️</div>
+          <div><div class="card-title">Send signing request</div><div class="card-subtitle">Client will receive a real email with a signing link</div></div>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label>Send signing link to this email</label>
+            <input type="email" id="clientEmail" placeholder="Enter client email address" style="font-size:15px;padding:12px;">
+          </div>
+          <div style="background:var(--light);border-radius:10px;padding:16px;font-size:13px;color:var(--gray);">
+            <p><strong>From:</strong> ShelterIQ — ACC</p>
+            <p style="margin-top:4px"><strong>Subject:</strong> Action required — please sign your Animal Intake Form for Max</p>
+            <p style="margin-top:8px;color:var(--dark);">The client will receive a secure link to review and sign the document on any device.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-secondary" onclick="goStep(1)">← Back</button>
+        <button class="btn-primary" id="sendBtn" onclick="sendEmail()">
+          <span id="sendLabel">Send Email</span>
+          <span id="sendSpinner" style="display:none" class="spinner"></span>
+        </button>
+      </div>
     </div>
-    <div class="step-line" id="line3"></div>
-    <div class="step-item">
-      <div class="step-circle" id="sc4">4</div>
-      <div class="step-label" id="sl4">Complete</div>
+
+    <!-- STEP 3: Sent confirmation -->
+    <div id="step3" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">✅</div>
+          <div><div class="card-title">Signing request sent!</div><div class="card-subtitle">Waiting for client to sign</div></div>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-success">✅ Email sent! You will be notified at <strong>mona.hatamiai@gmail.com</strong> once the client signs.</div>
+          <div class="info-grid">
+            <div class="info-box"><div class="info-label">ANIMAL</div><div class="info-value">Max — Dog</div></div>
+            <div class="info-box"><div class="info-label">RECORD #</div><div class="info-value">A-48291</div></div>
+            <div class="info-box"><div class="info-label">SENT TO</div><div class="info-value" id="sentTo">—</div></div>
+            <div class="info-box"><div class="info-label">STATUS</div><div class="info-value" style="color:var(--warning)">⏳ Awaiting signature</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="goStep(1)">← Start new form</button>
     </div>
+
   </div>
 </div>
 
-<div class="main">
-
-  <!-- ══════════════════════════════════════
-       PANEL 1 — REVIEW FORM
-  ══════════════════════════════════════ -->
-  <div class="panel active" id="panel1">
-
-    <div class="alert alert-info">
-      ℹ️ <span>In production, this form is <strong>auto-filled from ShelterBuddy</strong> via API. For this demo, sample data has been pre-loaded.</span>
-    </div>
-
+<!-- ══════════════════════════════════════
+     CLIENT SIGNING PAGE
+     (shown when ?sign=1 in URL)
+══════════════════════════════════════ -->
+<div id="clientView" style="display:none">
+  <div class="main">
     <div class="card">
       <div class="card-header">
-        <div class="card-header-icon">🐾</div>
-        <div>
-          <div class="card-title">Animal Intake Form</div>
-          <div class="card-subtitle">Animal Care Centers of NYC — Rev. July 2024</div>
-        </div>
+        <div class="card-icon">🔒</div>
+        <div><div class="card-title">Sign your document</div><div class="card-subtitle">Animal Care Centers of NYC</div></div>
       </div>
       <div class="card-body">
-        <div class="sb-badge"><div class="sb-dot"></div> Data pulled from ShelterBuddy #A-48291</div>
-
-        <div class="field-grid col-3">
-          <div class="field"><label>Precinct</label><input class="prefilled" value="67th Precinct" id="f_precinct"></div>
-          <div class="field"><label>Officer name</label><input class="prefilled" value="J. Rodriguez" id="f_officer"></div>
-          <div class="field"><label>Date / Time</label><input class="prefilled" value="May 9, 2026 — 2:30 PM" id="f_datetime"></div>
+        <div class="alert alert-warning" style="margin-bottom:16px">🔒 Secure signing link — expires in 48 hours</div>
+        <div class="info-grid">
+          <div class="info-box"><div class="info-label">ANIMAL</div><div class="info-value" id="c_animal">Max — Dog</div></div>
+          <div class="info-box"><div class="info-label">RECORD #</div><div class="info-value" id="c_record">A-48291</div></div>
+          <div class="info-box"><div class="info-label">DATE</div><div class="info-value" id="c_date">May 9, 2026</div></div>
+          <div class="info-box"><div class="info-label">OFFICER</div><div class="info-value" id="c_officer">J. Rodriguez</div></div>
         </div>
-
-        <div class="field-grid col-3" style="margin-top:12px">
-          <div class="field"><label>Shield #</label><input class="prefilled" value="4821" id="f_shield"></div>
-          <div class="field"><label>Vehicle #</label><input class="prefilled" value="V-204" id="f_vehicle"></div>
-          <div class="field"><label>Shift</label><input class="prefilled" value="Day" id="f_shift"></div>
-        </div>
-
-        <div class="field-grid col-1" style="margin-top:12px">
-          <div class="field"><label>Pickup location</label><input class="prefilled" value="123 Atlantic Ave, Apt 4B, Brooklyn NY 11201" id="f_location"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="field-grid col-3">
-          <div class="field"><label>Animal type</label><input class="prefilled" value="Dog" id="f_type"></div>
-          <div class="field"><label>Animal name</label><input class="prefilled" value="Max" id="f_name"></div>
-          <div class="field"><label>Age / DOB</label><input class="prefilled" value="~2 years" id="f_age"></div>
-        </div>
-
-        <div class="field-grid col-1" style="margin-top:12px">
-          <div class="field"><label>Animal behavior</label><textarea id="f_behavior">Friendly, allowed handling, tail wagging. No signs of aggression.</textarea></div>
-        </div>
-
-        <div class="field-grid col-1" style="margin-top:12px">
-          <div class="field"><label>Why was the animal picked up?</label><textarea id="f_reason">Found wandering off-leash near the park. No collar or tags. Owner not present at scene.</textarea></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="field-grid col-2">
-          <div class="field"><label>Owner name</label><input class="prefilled" value="Carmen Gonzalez" id="f_owner"></div>
-          <div class="field"><label>Owner phone</label><input class="prefilled" value="347-219-2296" id="f_phone"></div>
-        </div>
-
-        <div class="field-grid col-1" style="margin-top:12px">
-          <div class="field"><label>Owner address</label><input class="prefilled" value="123 Atlantic Ave, Apt 4B, Brooklyn NY 11201" id="f_address"></div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn-primary" onclick="goTo(2)">Send for Signature →</button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       PANEL 2 — SEND EMAIL
-  ══════════════════════════════════════ -->
-  <div class="panel" id="panel2">
-
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-icon">✉️</div>
-        <div>
-          <div class="card-title">Send signing request</div>
-          <div class="card-subtitle">Enter any email to test — the client will receive a real email</div>
-        </div>
-      </div>
-      <div class="card-body">
-
-        <div class="field" style="margin-bottom:16px">
-          <label>Send signing link to this email</label>
-          <input type="email" id="clientEmail" placeholder="Enter any email address to test" style="font-size:15px; padding:12px;">
-        </div>
-
-        <div class="email-preview">
-          <div class="email-meta">
-            <p>From: <span>admissions@shelteriq.org</span></p>
-            <p>To: <span id="previewTo">the email you entered above</span></p>
-            <p>Subject: <span>Action required — please sign your Animal Intake Form</span></p>
-          </div>
-          <div class="email-body-preview">
-            <p>Dear <strong>Carmen Gonzalez</strong>,</p>
-            <br>
-            <p>Animal Care Centers of NYC has prepared your Animal Intake Form for <strong>Max</strong> (Dog, A-48291) and needs your signature to complete the process.</p>
-            <br>
-            <p>Please click the button below to review and sign. It only takes a minute and works on any phone or computer.</p>
-            <a class="email-cta" href="#">Review & Sign Document →</a>
-            <br>
-            <p style="font-size:12px;color:#999">This link expires in 48 hours. Questions? Call 212-788-4000.</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="goTo(1)">← Back</button>
-      <button class="btn-primary" id="sendBtn" onclick="sendEmail()">
-        <span id="sendLabel">Send Email</span>
-        <span id="sendSpinner" style="display:none" class="spinner"></span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       PANEL 3 — STAFF VIEW (after sending)
-  ══════════════════════════════════════ -->
-  <div class="panel" id="panel3">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-icon">✅</div>
-        <div>
-          <div class="card-title">Signing request sent!</div>
-          <div class="card-subtitle">Waiting for client to sign</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="alert alert-success" style="margin-bottom:16px">
-          ✅ An email has been sent to the client with a secure signing link. You will receive a notification at <strong>mona.hatamiai@gmail.com</strong> once they sign.
-        </div>
-        <div class="field-grid col-2">
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">ANIMAL</div><div style="font-size:14px;font-weight:600" id="s3_animal">Max — Dog</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">RECORD #</div><div style="font-size:14px;font-weight:600">A-48291</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">SENT TO</div><div style="font-size:14px;font-weight:600" id="s3_email">—</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">STATUS</div><div style="font-size:14px;font-weight:600;color:#f39c12">⏳ Awaiting signature</div></div>
-        </div>
-        <p style="font-size:12px;color:var(--gray);margin-top:16px;">The client will receive an email with a link that takes them directly to the signing page. Once signed, the document will be saved to Google Drive and you will be notified.</p>
-      </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="resetDemo()">← Start new form</button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       SIGNING PAGE — shown when client
-       opens link from email (?sign=1)
-  ══════════════════════════════════════ -->
-  <div id="signingPage" style="display:none">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-icon">✍️</div>
-        <div>
-          <div class="card-title">Sign your document</div>
-          <div class="card-subtitle">Animal Care Centers of NYC</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="alert alert-warning" style="margin-bottom:16px">
-          🔒 Secure signing link — Animal Intake Form for <strong>Max</strong> (Dog) — expires in 48 hours
-        </div>
-        <div class="field-grid col-2" style="margin-bottom:16px">
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">ANIMAL</div><div style="font-size:14px;font-weight:600">Max — Dog</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">RECORD #</div><div style="font-size:14px;font-weight:600" id="sp_record">A-48291</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">DATE</div><div style="font-size:14px;font-weight:600">May 9, 2026</div></div>
-          <div style="background:var(--light);border-radius:8px;padding:12px"><div style="font-size:11px;color:var(--gray);margin-bottom:4px;font-weight:600">OFFICER</div><div style="font-size:14px;font-weight:600">J. Rodriguez</div></div>
-        </div>
-        <div class="field" style="margin-bottom:12px">
-          <label>Your full name (type to confirm identity)</label>
-          <input type="text" id="clientName" placeholder="Type your full name here">
+        <div class="field" style="margin-bottom:14px">
+          <label>Your full name — type to confirm identity</label>
+          <input type="text" id="clientName" placeholder="Type your full name here" style="font-size:15px;padding:12px;">
         </div>
         <div class="field">
           <label>Signature — draw with finger or mouse</label>
           <div class="sig-wrap">
-            <div class="sig-toolbar">
-              <span>Sign in the box below</span>
-              <button class="sig-clear" onclick="clearSig()">Clear</button>
-            </div>
+            <div class="sig-toolbar"><span>Sign in the box below</span><button class="sig-clear" onclick="clearSig()">Clear</button></div>
             <canvas id="sigCanvas"></canvas>
           </div>
         </div>
         <p style="font-size:12px;color:var(--gray);margin-top:10px;line-height:1.5">By signing above, I confirm the information in this Animal Intake Form is accurate to the best of my knowledge.</p>
       </div>
     </div>
-    <div class="btn-row">
-      <button class="btn-primary" onclick="submitSignature()">Submit Signature →</button>
-    </div>
+    <button class="btn-primary" id="submitBtn" onclick="submitSignature()">
+      <span id="submitLabel">Submit Signature →</span>
+      <span id="submitSpinner" style="display:none" class="spinner"></span>
+    </button>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════
-       PANEL 4 — COMPLETE
-  ══════════════════════════════════════ -->
-  <div class="panel" id="panel4">
+<!-- ══════════════════════════════════════
+     SUCCESS PAGE (after client signs)
+══════════════════════════════════════ -->
+<div id="successView" style="display:none">
+  <div class="main">
     <div class="card">
       <div class="card-body">
         <div class="success-wrap">
           <div class="success-icon">✅</div>
-          <div class="success-title">Document signed & saved!</div>
-          <div class="success-desc">The signed Animal Intake Form for <strong>Max</strong> has been processed. In production, this PDF would be automatically uploaded to ShelterBuddy record A-48291 — no manual steps needed.</div>
-
+          <div class="success-title">Document signed!</div>
+          <div class="success-desc">Thank you. Your signature has been saved and the ACC team has been notified. You can close this window.</div>
           <div class="success-steps">
-            <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Form completed</strong> by staff — data pulled from ShelterBuddy</span></div>
-            <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Email sent</strong> to client with signing link</span></div>
-            <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Client signed</strong> — Carmen Gonzalez, May 9, 2026</span></div>
-            <div class="success-step"><span class="success-step-icon">🔄</span><span><strong>PDF upload to ShelterBuddy</strong> — automatic via API (requires full API access)</span></div>
+            <div class="success-step"><span>✅</span><span><strong>Identity confirmed</strong></span></div>
+            <div class="success-step"><span>✅</span><span><strong>Signature captured</strong> and saved securely</span></div>
+            <div class="success-step"><span>✅</span><span><strong>Document saved</strong> to ACC records</span></div>
+            <div class="success-step"><span>✅</span><span><strong>Staff notified</strong> automatically</span></div>
           </div>
-
-          <div class="alert alert-info" style="text-align:left">
-            💡 <span>The last step (auto-upload to ShelterBuddy) requires full API access. This is what we are requesting from John — once approved, the entire workflow is fully automated with zero manual steps.</span>
-          </div>
-
-          <button class="btn-primary" onclick="resetDemo()" style="max-width:300px;margin:0 auto">Start over →</button>
         </div>
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
-// ── GOOGLE APPS SCRIPT BACKEND ──
-// Connected to: mona.hatami@shelteriq.org
-// Emails send from your Gmail, signed docs save to your Google Drive
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8Iodq19z8zWicO41fWLe2yAUlBFoC2ttnZlpwXGutvmR3y3dFemr2qMWRTcCTRMjJ/exec';
 
-// ── STEP NAVIGATION ──
-function goTo(step) {
-  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i+1 === step));
-  for (let i = 1; i <= 4; i++) {
-    const circle = document.getElementById('sc'+i);
-    const label  = document.getElementById('sl'+i);
-    circle.classList.remove('active','done');
-    label.classList.remove('active');
-    if (i < step)  { circle.classList.add('done'); circle.textContent = '✓'; }
-    if (i === step) { circle.classList.add('active'); circle.textContent = i; label.classList.add('active'); }
-    if (i > step)   { circle.textContent = i; }
-    if (i < 4) {
-      const line = document.getElementById('line'+i);
-      line.classList.toggle('done', i < step);
-    }
+// ── CHECK URL ON LOAD ──
+window.onload = function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('sign') === '1') {
+    showClientView(params);
   }
-  if (step === 3) setTimeout(initCanvas, 100);
+};
+
+function showClientView(params) {
+  document.getElementById('staffView').style.display  = 'none';
+  document.getElementById('clientView').style.display = 'block';
+  document.getElementById('headerBadge').textContent  = '✍️ Please sign your document';
+
+  // Populate with URL data
+  const animal  = params.get('animal') || 'Max';
+  const type    = params.get('type')   || 'Dog';
+  const record  = params.get('record') || 'A-48291';
+  const officer = params.get('off')    || 'J. Rodriguez';
+
+  document.getElementById('c_animal').textContent  = animal + ' — ' + type;
+  document.getElementById('c_record').textContent  = record;
+  document.getElementById('c_officer').textContent = officer;
+  document.getElementById('c_date').textContent    = new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+
+  setTimeout(initCanvas, 200);
 }
 
-// ── PREVIEW EMAIL TO ──
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('clientEmail');
-  if (input) {
-    input.addEventListener('input', () => {
-      document.getElementById('previewTo').textContent = input.value || 'the email you entered above';
-    });
-  }
-});
+// ── STAFF STEP NAVIGATION ──
+function goStep(n) {
+  document.getElementById('step1').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('step2').style.display = n === 2 ? 'block' : 'none';
+  document.getElementById('step3').style.display = n === 3 ? 'block' : 'none';
 
-// ── SEND EMAIL via Google Apps Script (CORS-safe) ──
-async function sendEmail() {
+  for (let i = 1; i <= 3; i++) {
+    const c = document.getElementById('sc' + i);
+    const l = document.getElementById('sl' + i);
+    c.className = 'step-circle' + (i < n ? ' done' : i === n ? ' active' : '');
+    c.textContent = i < n ? '✓' : i;
+    l.className = 'step-label' + (i === n ? ' active' : '');
+    if (i < 3) document.getElementById('line' + i).className = 'step-line' + (i < n ? ' done' : '');
+  }
+}
+
+// ── SEND EMAIL ──
+function sendEmail() {
   const email = document.getElementById('clientEmail').value.trim();
   if (!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
 
   const btn   = document.getElementById('sendBtn');
   const label = document.getElementById('sendLabel');
   const spin  = document.getElementById('sendSpinner');
+  btn.disabled = true; label.textContent = 'Sending...'; spin.style.display = 'inline-block';
 
-  btn.disabled = true;
-  label.textContent = 'Sending...';
-  spin.style.display = 'inline-block';
+  const token  = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const record = 'A-48291';
+  const animal = document.getElementById('f_name').value;
+  const type   = document.getElementById('f_type').value;
+  const owner  = document.getElementById('f_owner').value;
+  const off    = document.getElementById('f_officer').value;
+  const phone  = document.getElementById('f_phone').value;
+  const addr   = document.getElementById('f_address').value;
+  const beh    = document.getElementById('f_behavior').value;
+  const pre    = document.getElementById('f_precinct').value;
 
-  const token    = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-  const recordId = 'A-48291';
-  const owner    = document.getElementById('f_owner').value;
-  const animal   = document.getElementById('f_name').value;
-  const type     = document.getElementById('f_type').value;
-  const precinct = document.getElementById('f_precinct').value;
-  const officer  = document.getElementById('f_officer').value;
-  const phone    = document.getElementById('f_phone').value;
-  const address  = document.getElementById('f_address').value;
-  const behavior = document.getElementById('f_behavior').value;
-
-  // Pass all form data in the signing link so client page has it
-  const signLink = window.location.href.split('?')[0]
+  const signLink = window.location.origin + window.location.pathname
     + '?sign=1&token=' + token
-    + '&record=' + recordId
-    + '&owner='  + encodeURIComponent(owner)
+    + '&record=' + encodeURIComponent(record)
     + '&animal=' + encodeURIComponent(animal)
     + '&type='   + encodeURIComponent(type)
-    + '&pre='    + encodeURIComponent(precinct)
-    + '&off='    + encodeURIComponent(officer)
+    + '&owner='  + encodeURIComponent(owner)
+    + '&off='    + encodeURIComponent(off)
     + '&phone='  + encodeURIComponent(phone)
-    + '&addr='   + encodeURIComponent(address)
-    + '&beh='    + encodeURIComponent(behavior);
+    + '&addr='   + encodeURIComponent(addr)
+    + '&beh='    + encodeURIComponent(beh)
+    + '&pre='    + encodeURIComponent(pre);
 
   const payload = {
-    action:      'send_signing_request',
-    to_email:    email,
-    owner_name:  owner,
-    animal_name: animal,
-    record_id:   recordId,
-    token:       token,
-    sign_link:   signLink,
-    form_data:   JSON.stringify({
-      precinct: precinct,
-      officer:  officer,
-      animal:   animal,
-      owner:    owner,
-      type:     type,
-      phone:    phone,
-      address:  address,
-      behavior: behavior,
-    })
+    action: 'send_signing_request',
+    to_email: email, owner_name: owner, animal_name: animal,
+    record_id: record, token: token, sign_link: signLink,
+    form_data: JSON.stringify({ precinct: pre, officer: off, animal: animal, owner: owner, type: type, phone: phone, address: addr, behavior: beh })
   };
 
-  // Use script tag trick to bypass CORS completely
-  callGAS(payload, function(result) {
-    btn.disabled = false;
-    label.textContent = 'Send Email';
-    spin.style.display = 'none';
-    // Show who we sent to
-    document.getElementById('s3_email').textContent = email;
-    document.getElementById('s3_animal').textContent = document.getElementById('f_name').value + ' — ' + document.getElementById('f_type').value;
-    goTo(3);
+  callGAS(payload, function() {
+    btn.disabled = false; label.textContent = 'Send Email'; spin.style.display = 'none';
+    document.getElementById('sentTo').textContent = email;
+    goStep(3);
   });
-}
-
-// ── GOOGLE APPS SCRIPT CALLER (bypasses CORS using script injection) ──
-function callGAS(payload, callback) {
-  const callbackName = 'gasCallback_' + Date.now();
-  window[callbackName] = function(result) {
-    callback(result);
-    delete window[callbackName];
-    document.getElementById('gasScript') && document.getElementById('gasScript').remove();
-  };
-
-  const params = new URLSearchParams();
-  params.append('action',  payload.action);
-  params.append('payload', JSON.stringify(payload));
-  params.append('callback', callbackName);
-
-  const script = document.createElement('script');
-  script.id  = 'gasScript';
-  script.src = APPS_SCRIPT_URL + '?' + params.toString();
-  script.onerror = function() {
-    // Even if script errors, the GAS function ran — proceed
-    callback({ success: true });
-    this.remove();
-  };
-  document.body.appendChild(script);
-
-  // Fallback after 8 seconds
-  setTimeout(function() {
-    if (window[callbackName]) {
-      delete window[callbackName];
-      callback({ success: true });
-    }
-  }, 8000);
 }
 
 // ── SIGNATURE PAD ──
@@ -546,21 +349,18 @@ let canvas, ctx, drawing = false, lx = 0, ly = 0;
 
 function initCanvas() {
   canvas = document.getElementById('sigCanvas');
-  ctx    = canvas.getContext('2d');
+  if (!canvas) return;
+  ctx = canvas.getContext('2d');
   const rect = canvas.getBoundingClientRect();
   canvas.width  = rect.width  * (window.devicePixelRatio || 1);
   canvas.height = rect.height * (window.devicePixelRatio || 1);
   ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-  ctx.strokeStyle = '#1C2B2D';
-  ctx.lineWidth   = 2.5;
-  ctx.lineCap     = 'round';
-  ctx.lineJoin    = 'round';
+  ctx.strokeStyle = '#1C2B2D'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
   function pos(e) {
     const r = canvas.getBoundingClientRect();
-    return e.touches
-      ? { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }
-      : { x: e.clientX - r.left,            y: e.clientY - r.top };
+    return e.touches ? { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }
+                     : { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   canvas.addEventListener('mousedown',  e => { drawing=true; const p=pos(e); lx=p.x; ly=p.y; });
   canvas.addEventListener('mousemove',  e => { if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke(); lx=p.x; ly=p.y; });
@@ -571,126 +371,79 @@ function initCanvas() {
   canvas.addEventListener('touchend',   () => drawing=false);
 }
 
-function clearSig() { if(ctx) ctx.clearRect(0,0,canvas.width,canvas.height); }
+function clearSig() { if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
 function sigIsEmpty() {
-  if (!canvas) return true;
-  return !ctx.getImageData(0,0,canvas.width,canvas.height).data.some(v => v !== 0);
+  if (!canvas || !ctx) return true;
+  return !ctx.getImageData(0, 0, canvas.width, canvas.height).data.some(v => v !== 0);
 }
 
-// ── SUBMIT SIGNATURE — saves to Google Drive ──
-async function submitSignature() {
+// ── SUBMIT SIGNATURE ──
+function submitSignature() {
   const name = document.getElementById('clientName').value.trim();
   if (!name)        { alert('Please type your full name.'); return; }
-  if (sigIsEmpty()) { alert('Please add your signature.');  return; }
+  if (sigIsEmpty()) { alert('Please draw your signature.'); return; }
 
-  const sigData   = canvas.toDataURL('image/png');
-  const urlParams = new URLSearchParams(window.location.search);
-  const token     = urlParams.get('token')  || 'demo_' + Date.now();
-  const recordId  = urlParams.get('record') || 'A-48291';
-  const isSigningPage = urlParams.get('sign') === '1';
+  const btn   = document.getElementById('submitBtn');
+  const label = document.getElementById('submitLabel');
+  const spin  = document.getElementById('submitSpinner');
+  btn.disabled = true; label.textContent = 'Saving...'; spin.style.display = 'inline-block';
 
-  // If opened from email link, get data from URL params
-  // If on main form, get data from form fields
-  const ownerName  = isSigningPage ? (urlParams.get('owner')  || 'Client')  : document.getElementById('f_owner').value;
-  const animalName = isSigningPage ? (urlParams.get('animal') || 'Animal')  : document.getElementById('f_name').value;
-  const precinct   = isSigningPage ? (urlParams.get('pre')    || '')        : document.getElementById('f_precinct').value;
-  const officer    = isSigningPage ? (urlParams.get('off')    || '')        : document.getElementById('f_officer').value;
-  const phone      = isSigningPage ? (urlParams.get('phone')  || '')        : document.getElementById('f_phone').value;
-  const address    = isSigningPage ? (urlParams.get('addr')   || '')        : document.getElementById('f_address').value;
-  const behavior   = isSigningPage ? (urlParams.get('beh')    || '')        : document.getElementById('f_behavior').value;
-
-  const payload = {
+  const params   = new URLSearchParams(window.location.search);
+  const sigData  = canvas.toDataURL('image/png');
+  const payload  = {
     action:         'save_signed_document',
-    token:          token,
-    record_id:      recordId,
-    owner_name:     ownerName,
-    animal_name:    animalName,
+    token:          params.get('token')  || 'demo_' + Date.now(),
+    record_id:      params.get('record') || 'A-48291',
+    owner_name:     params.get('owner')  || 'Client',
+    animal_name:    params.get('animal') || 'Animal',
     signed_name:    name,
     signature_data: sigData,
-    form_data:      JSON.stringify({
-      precinct: precinct,
-      officer:  officer,
-      animal:   animalName,
-      owner:    ownerName,
-      phone:    phone,
-      address:  address,
-      behavior: behavior,
-      type:     isSigningPage ? (urlParams.get('type') || '') : document.getElementById('f_type').value,
+    form_data: JSON.stringify({
+      precinct: params.get('pre')   || '',
+      officer:  params.get('off')   || '',
+      type:     params.get('type')  || '',
+      phone:    params.get('phone') || '',
+      address:  params.get('addr')  || '',
+      behavior: params.get('beh')   || '',
+      owner:    params.get('owner') || '',
+      animal:   params.get('animal')|| ''
     })
   };
 
-  const isSigningPage = urlParams.get('sign') === '1';
-
   callGAS(payload, function() {
-    if (isSigningPage) {
-      // Show success message directly on signing page
-      document.getElementById('signingPage').innerHTML = `
-        <div class="card">
-          <div class="card-body">
-            <div class="success-wrap">
-              <div class="success-icon">✅</div>
-              <div class="success-title">Document signed successfully!</div>
-              <div class="success-desc">
-                Thank you <strong>${name}</strong>. Your signature has been saved and the Animal Care Centers of NYC team has been notified.<br><br>
-                You can now close this window.
-              </div>
-              <div class="success-steps">
-                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Identity confirmed</strong> — ${name}</span></div>
-                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Signature captured</strong> and saved securely</span></div>
-                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Document saved</strong> to Animal Care Centers of NYC</span></div>
-                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Staff notified</strong> automatically</span></div>
-              </div>
-            </div>
-          </div>
-        </div>`;
-    } else {
-      goTo(4);
-    }
+    document.getElementById('clientView').style.display  = 'none';
+    document.getElementById('successView').style.display = 'block';
+    document.getElementById('headerBadge').textContent   = '✅ Signed!';
   });
 }
 
-// ── RESET ──
-function resetDemo() {
-  document.getElementById('clientEmail').value = '';
-  document.getElementById('clientName').value  = '';
-  if (ctx) ctx.clearRect(0,0,canvas.width,canvas.height);
-  goTo(1);
+// ── CALL GOOGLE APPS SCRIPT (JSONP) ──
+function callGAS(payload, callback) {
+  const cbName = 'cb_' + Date.now();
+  window[cbName] = function(result) {
+    callback(result);
+    delete window[cbName];
+    const s = document.getElementById('gasScript');
+    if (s) s.remove();
+  };
+
+  const params = new URLSearchParams();
+  params.append('action',   payload.action);
+  params.append('payload',  JSON.stringify(payload));
+  params.append('callback', cbName);
+
+  const script = document.createElement('script');
+  script.id    = 'gasScript';
+  script.src   = APPS_SCRIPT_URL + '?' + params.toString();
+  script.onerror = function() { callback({ success: true }); this.remove(); };
+  document.body.appendChild(script);
+
+  // Fallback after 10 seconds
+  setTimeout(function() {
+    if (window[cbName]) { delete window[cbName]; callback({ success: true }); }
+  }, 10000);
 }
-
-// ── AUTO DETECT SIGNING LINK ──
-document.addEventListener('DOMContentLoaded', function() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('sign') === '1') {
-    // Hide the main form flow completely
-    document.querySelector('.progress-wrap').style.display = 'none';
-    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-
-    // Populate signing page with data from URL
-    const animal   = params.get('animal') || 'Max';
-    const recordId = params.get('record') || 'A-48291';
-    const officer  = params.get('off')    || 'J. Rodriguez';
-
-    const recordEl = document.getElementById('sp_record');
-    if (recordEl) recordEl.textContent = recordId;
-
-    // Update animal info on signing page
-    const animalEls = document.querySelectorAll('#signingPage .field-value');
-    if (animalEls[0]) animalEls[0].textContent = animal + ' — ' + (params.get('type') || 'Dog');
-    if (animalEls[1]) animalEls[1].textContent = recordId;
-    if (animalEls[3]) animalEls[3].textContent = officer;
-
-    // Show signing page
-    document.getElementById('signingPage').style.display = 'block';
-
-    // Update header badge
-    const badge = document.querySelector('.header-badge');
-    if (badge) badge.textContent = '✍️ Please sign your document';
-
-    // Init canvas
-    setTimeout(initCanvas, 100);
-  }
-});
 </script>
 </body>
 </html>
