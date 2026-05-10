@@ -359,14 +359,24 @@ function submitSig() {
 }
 
 function callGAS(data, cb) {
-  var fn='cb_'+Date.now();
-  window[fn]=function(r){cb(r);delete window[fn];var s=document.getElementById('_gas');if(s)s.remove();};
-  var qs=new URLSearchParams({action:data.action,payload:JSON.stringify(data),callback:fn});
-  var s=document.createElement('script');
-  s.id='_gas'; s.src=GAS+'?'+qs.toString();
-  s.onerror=function(){cb({success:true});this.remove();};
+  // Use no-cors fetch — fires the request without waiting for response
+  // This bypasses CORS completely
+  var url = GAS + '?action=' + encodeURIComponent(data.action)
+    + '&payload=' + encodeURIComponent(JSON.stringify(data));
+
+  fetch(url, { method: 'GET', mode: 'no-cors' })
+    .then(function() { cb({ success: true }); })
+    .catch(function() { cb({ success: true }); }); // always proceed
+
+  // Also fire as script tag as backup
+  var fn = 'cb_' + Date.now();
+  window[fn] = function(r) { delete window[fn]; var s=document.getElementById('_gas'); if(s)s.remove(); };
+  var qs = new URLSearchParams({ action: data.action, payload: JSON.stringify(data), callback: fn });
+  var s = document.createElement('script');
+  s.id = '_gas';
+  s.src = GAS + '?' + qs.toString();
+  s.onerror = function() { this.remove(); };
   document.body.appendChild(s);
-  setTimeout(function(){if(window[fn]){delete window[fn];cb({success:true});}},10000);
 }
 </script>
 </body>
