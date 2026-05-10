@@ -620,7 +620,34 @@ async function submitSignature() {
     })
   };
 
-  callGAS(payload, function() { goTo(4); });
+  const isSigningPage = urlParams.get('sign') === '1';
+
+  callGAS(payload, function() {
+    if (isSigningPage) {
+      // Show success message directly on signing page
+      document.getElementById('signingPage').innerHTML = `
+        <div class="card">
+          <div class="card-body">
+            <div class="success-wrap">
+              <div class="success-icon">✅</div>
+              <div class="success-title">Document signed successfully!</div>
+              <div class="success-desc">
+                Thank you <strong>${name}</strong>. Your signature has been saved and the Animal Care Centers of NYC team has been notified.<br><br>
+                You can now close this window.
+              </div>
+              <div class="success-steps">
+                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Identity confirmed</strong> — ${name}</span></div>
+                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Signature captured</strong> and saved securely</span></div>
+                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Document saved</strong> to Animal Care Centers of NYC</span></div>
+                <div class="success-step"><span class="success-step-icon">✅</span><span><strong>Staff notified</strong> automatically</span></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      goTo(4);
+    }
+  });
 }
 
 // ── RESET ──
