@@ -325,14 +325,16 @@ function submitSig() {
   btn.disabled=true; lbl.textContent='Saving...'; spin.style.display='inline-block';
   var p=new URLSearchParams(window.location.search);
 
-  // Use a small signature thumbnail to avoid URL length limits
+  // Capture signature with white background
   var sigData = '';
   try {
     var tmpCanvas = document.createElement('canvas');
     tmpCanvas.width = 400; tmpCanvas.height = 100;
     var tmpCtx = tmpCanvas.getContext('2d');
+    tmpCtx.fillStyle = '#ffffff';
+    tmpCtx.fillRect(0, 0, 400, 100);
     tmpCtx.drawImage(canvas, 0, 0, canvas.width/window.devicePixelRatio, canvas.height/window.devicePixelRatio, 0, 0, 400, 100);
-    sigData = tmpCanvas.toDataURL('image/jpeg', 0.5);
+    sigData = tmpCanvas.toDataURL('image/jpeg', 0.9);
   } catch(e) { sigData = 'signature_on_file'; }
 
   callGAS({
